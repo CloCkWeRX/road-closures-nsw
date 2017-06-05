@@ -98,7 +98,7 @@ def translate_to_opencouncildata(feature)
   }
 
   # TODO Assess if minutes?
-  feature["properties"]["delay_mins"] = features["properties"]["expectedDelay"] if features["properties"]["expectedDelay"] != " "
+  feature["properties"]["delay_mins"] = feature["properties"]["expectedDelay"] if feature["properties"]["expectedDelay"] != " "
 
   #   status  The level of impact: closed (no movement), restricted (speed restrictions and possible lane closures), open (open, included if necessary to avoid doubt), detour (this line feature is a recommended detour around another closure)
   # start_date  Date of start of closure, in ISO8601 format: 2015-06-04
