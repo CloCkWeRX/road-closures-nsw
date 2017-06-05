@@ -84,6 +84,16 @@ def translate_to_opencouncildata(feature)
   status = "open" if feature["properties"]["ended"]
   status ||= feature["properties"]["speedLimit"] < 0 ? "closed" : "restricted"
 
+  reason = case features["properties"]["mainCategory"]
+  when 'Scheduled road works'
+    # Event, 
+    # Unplanned (e.g. emergency maintenance), 
+    # Crash, 
+    # Natural (fire, flood, weather)
+    'Works' # (including road works, building construction, water mains),
+  else
+    'Unplanned'
+  end
   feature["properties"] = {
     "status" => status,
     "start_date" => start_date,
@@ -93,6 +103,7 @@ def translate_to_opencouncildata(feature)
     "end_time" => end_time,
     # "ref"=> feature["properties"]["ID"],
     # "updated" => feature["properties"]["UPDATEDATE"],
+    "reason" => reason,
     "reason_desc" => feature["properties"]["headline"],
     "source" => "livetraffic.com",
   }
