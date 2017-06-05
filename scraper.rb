@@ -41,7 +41,6 @@ else
 end
 
 def translate_to_opencouncildata(feature)
-  raise feature["properties"].inspect
   start_date, start_time = DateTime.strptime(feature["properties"]["start"], '%s').iso8601.split("T") if feature["properties"]["start"]
   end_date, end_time = DateTime.strptime(feature["properties"]["end"], '%s').iso8601.split("T") if feature["properties"]["end"]
 
