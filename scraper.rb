@@ -31,15 +31,6 @@ require 'json'
 # NSW Traffic
 # https://www.livetraffic.com/traffic/hazards/roadwork.json?1496658338900
 
-if ENV['RAILS_ENV'] == 'test'
-  require 'pry'
-
-  file = IO.read('./roadwork.json')
-else
-  url = "https://www.livetraffic.com/traffic/hazards/roadwork.json?#{DateTime.now.strftime('%s')}"
-  file = open(url).read
-end
-
 def translate_to_opencouncildata(feature)
   start_date, start_time = DateTime.strptime(feature["properties"]["start"].to_s, '%s').iso8601.split("T") if feature["properties"]["start"]
   end_date, end_time = DateTime.strptime(feature["properties"]["end"].to_s, '%s').iso8601.split("T") if feature["properties"]["end"]
@@ -91,9 +82,21 @@ def translate_to_opencouncildata(feature)
     # Crash, 
     # Natural (fire, flood, weather)
     'Works' # (including road works, building construction, water mains),
+  when 'Accident',
+    'Crash' 
+  when 'Breakdown'
+    'Unplanned'
+  when 'Special Event'
+    'Event'
+  when 'Changed traffic conditions'
+  when 'Hazard'
+    'Unplanned'
+  when 'Flooding', 'Alpine conditions'
+    'Natural'
   else
     'Unplanned'
   end
+
   feature["properties"] = {
     "status" => status,
     "start_date" => start_date,
@@ -134,13 +137,43 @@ def translate_to_opencouncildata(feature)
   feature
 end
 
-data = JSON.parse(file)
-features = data["features"]
-features.each do |feature|
-  record = translate_to_opencouncildata(feature.dup)["properties"]
 
-  # Assume its a Point
-  record["longitude"], record["latitude"] = feature["geometry"]["coordinates"]
+def crawl_content(file)
+  data = JSON.parse(file)
+  features = data["features"]
+  features.each do |feature|
+    record = translate_to_opencouncildata(feature.dup)["properties"]
 
-  ScraperWiki.save_sqlite(["start_date", "start_time", "latitude", "longitude"], record)
+    # Assume its a Point
+    record["longitude"], record["latitude"] = feature["geometry"]["coordinates"]
+
+    ScraperWiki.save_sqlite(["start_date", "start_time", "latitude", "longitude"], record)
+  end
+end
+
+
+if ENV['RAILS_ENV'] == 'test'
+  require 'pry'
+
+  [
+    './incident.json',
+    './roadwork.json',
+    './majorevent.json',
+    './fire.json',
+    './flood.json',
+    './alpine.json'
+  ].each do |url|
+    crawl_content(IO.read(url))
+  end
+else
+  [
+    "https://www.livetraffic.com/traffic/hazards/incident.json?#{DateTime.now.strftime('%s')}",
+    "https://www.livetraffic.com/traffic/hazards/majorevent.json?#{DateTime.now.strftime('%s')}",
+    "https://www.livetraffic.com/traffic/hazards/roadwork.json?#{DateTime.now.strftime('%s')}",
+    "https://www.livetraffic.com/traffic/hazards/fire.json?#{DateTime.now.strftime('%s')}",
+    "https://www.livetraffic.com/traffic/hazards/flood.json?#{DateTime.now.strftime('%s')}",
+    "https://www.livetraffic.com/traffic/hazards/alpine.json?#{DateTime.now.strftime('%s')}"
+  ].each do |url|
+    crawl_content(open(url).read)
+  end
 end
